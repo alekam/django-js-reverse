@@ -1,4 +1,4 @@
-{{ js_global_object_name }}.{{ js_var_name }} = (function () {
+const {{ js_var_name }} = (function () {
 
     var Urls = {};
 
@@ -110,3 +110,4 @@
 
     return Urls;
 })();
+export default {{ js_var_name }};
