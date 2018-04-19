@@ -6,6 +6,13 @@ var {{ js_var_name }} = (function () {
         url_patterns:{}
     };
 
+    function UrlNoReverseMatchException(url_pattern, args) {
+       this.url_pattern = url_pattern;
+       this.arguments = args;
+       this.message = "no reverse match known url patterns";
+       this.name = 'UrlNoReverseMatch';
+    }
+
     var _get_url = function (url_pattern) {
         return function () {
             var _arguments, index, url, url_arg, url_args, _i, _len, _ref,
@@ -63,17 +70,20 @@ var {{ js_var_name }} = (function () {
 
             // can't find a match
             if (_i == _ref_list.length)
-                return null;
+                if (process.env.NODE_ENV === 'development')
+                    throw new UrlNoReverseMatchException(url_pattern, _arguments);
+                else
+                    return null;
 
             _ref = _ref_list[_i];
             url = _ref[0], url_args = build_kwargs(_ref[1]);
             for (url_arg in url_args) {
-            	var url_arg_value = url_args[url_arg];
-            	if (url_arg_value === undefined || url_arg_value === null) {
-            		url_arg_value = '';
-            	} else {
-            		url_arg_value = url_arg_value.toString();
-            	}
+                var url_arg_value = url_args[url_arg];
+                if (url_arg_value === undefined || url_arg_value === null) {
+                    url_arg_value = '';
+                } else {
+                    url_arg_value = url_arg_value.toString();
+                }
                 url = url.replace("%(" + url_arg + ")s", url_arg_value);
             }
             return '{{url_prefix|escapejs}}' + url;
@@ -81,24 +91,18 @@ var {{ js_var_name }} = (function () {
     };
 
     var name, pattern, url, url_patterns, _i, _len, _ref;
-    url_patterns = [
-        {% for name, patterns in urls %}
-            [
-                '{{name|escapejs}}',
+    url_patterns = [{% for name, patterns in urls %}
+        [
+            '{{name|escapejs}}',
+            [{% for path, args in patterns %}
                 [
-                    {% for path, args in patterns %}
-                    [
-                        '{{path|escapejs}}',
-                        [
-                            {% for arg in args %}
-                            '{{arg|escapejs}}',
-                            {% endfor %}
-                        ]{% if not forloop.last %},{% endif %}
+                    '{{path|escapejs}}',
+                    [{% for arg in args %}
+                        '{{arg|escapejs}}',{% endfor %}
                     ]{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                ]{% if not forloop.last %},{% endif %}
-            ]{% if not forloop.last %},{% endif %}
-        {% endfor %}
+                ]{% if not forloop.last %},{% endif %}{% endfor %}
+        ]{% if not forloop.last %},{% endif %}
+        ]{% if not forloop.last %},{% endif %}{% endfor %}
     ];
     self.url_patterns = {};
     for (_i = 0, _len = url_patterns.length; _i < _len; _i++) {
